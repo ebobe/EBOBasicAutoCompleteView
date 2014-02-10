@@ -13,6 +13,6 @@
 @protocol EBOBasicAutoCompleteCellFactory <NSObject>
 
 @required
-- (UITableViewCell <EBOBasicAutoCompleteCell>*)createReusableCellWithIdentifier:(NSString *)identifier;
+- (UITableViewCell*)createReusableCellWithIdentifier:(NSString *)identifier;
 
 @end

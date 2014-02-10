@@ -112,10 +112,10 @@ presentingController:(UIViewController *)presentingController {
     calculatedHeight += self.presentingController.tabBarController.tabBar.frame.size.height;
     
     CGPoint presentationPoint = [self.presentingController.view convertPoint:CGPointMake(self.autoCompleteTextField.frame.origin.x, calculatedY) fromView:self.autoCompleteTextField.superview];
-    self.frame = CGRectMake(presentationPoint.x,
-                            presentationPoint.y,
-                            self.autoCompleteTextField.frame.size.width,
-                            MIN(calculatedHeight, self.tableView.contentSize.height));
+    self.frame = CGRectMake(presentationPoint.x + self.contentInset.left,
+                            presentationPoint.y + self.contentInset.top,
+                            self.autoCompleteTextField.frame.size.width - self.contentInset.left - self.contentInset.right,
+                            MIN(calculatedHeight, self.tableView.contentSize.height) - self.contentInset.top - self.contentInset.bottom);
     
     self.tableView.frame = CGRectMake(0, 0, self.frame.size.width, self.frame.size.height);
 }

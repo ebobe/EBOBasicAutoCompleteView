@@ -17,6 +17,7 @@
 
 @property (nonatomic, readonly) UITableView *tableView;
 @property (nonatomic, readonly) NSArray *autoCompleteList;
+@property (nonatomic, assign) UIEdgeInsets contentInset;
 
 @property (nonatomic, strong) id <EBOBasicAutoCompleteDataSource> autoCompleteDataSource;
 @property (nonatomic, strong) id <EBOBasicAutoCompleteDelegate> autoCompleteDelegate;
