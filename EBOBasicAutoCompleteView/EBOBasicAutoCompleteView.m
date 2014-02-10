@@ -165,11 +165,12 @@ presentingController:(UIViewController *)presentingController {
             self.hidden = YES;
         }
         else {
+            BOOL shouldLayout = self.autoCompleteList.count != searchResults.count;
             self.autoCompleteList = searchResults;
             [self.tableView reloadData];
             self.hidden = NO;
             
-            if (self.tableView.frame.size.height == 0) {
+            if (self.tableView.frame.size.height == 0 || shouldLayout) {
                 [self layoutAutoCompleteTableView];
             }
         }
