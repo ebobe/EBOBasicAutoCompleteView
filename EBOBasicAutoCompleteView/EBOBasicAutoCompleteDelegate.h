@@ -10,7 +10,9 @@
 
 @protocol EBOBasicAutoCompleteDelegate <NSObject>
 
-@required
+@optional
 - (void)layoutAutoCompleteTableView;
+
+- (CGFloat)heightForAutoCompleteTableView:(UITableView *)autoCompleteTableView;
 
 @end

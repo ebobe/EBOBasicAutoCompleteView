@@ -88,34 +88,48 @@ presentingController:(UIViewController *)presentingController {
 
 - (void)layoutAutoCompleteTableView {
     // Allow the delegate to position the table view
-    if (self.autoCompleteDelegate) {
+    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(layoutAutoCompleteTableView)]) {
         [self.autoCompleteDelegate layoutAutoCompleteTableView];
         return;
     }
     
-    CGFloat contextViewHeight = 0;
+    UIView *rootView = [UIApplication sharedApplication].keyWindow.rootViewController.view;
+    CGRect mainFrame = [UIScreen mainScreen].bounds;
+    // The bottom of the screen
+    CGFloat bottomOfScreen = CGRectGetMaxY(mainFrame);
+    // Presenting View Controller's view height
+    CGFloat pVCHeight = self.presentingController.view.frame.size.height;
+    // Keyboard display height
     CGFloat kbHeight = 0;
     if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation))
     {
-        contextViewHeight = self.presentingController.view.frame.size.height;
         kbHeight = self.keyboardSize.height;
     }
     else if (UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation))
     {
-        contextViewHeight = self.presentingController.view.frame.size.width;
+        bottomOfScreen = CGRectGetMaxX(mainFrame);
         kbHeight = self.keyboardSize.width;
     }
     
-    CGFloat calculatedY = self.autoCompleteTextField.frame.origin.y + self.autoCompleteTextField.frame.size.height;
-    CGFloat calculatedHeight = contextViewHeight - calculatedY - kbHeight;
+    // Find the point at which to display our AutoComplete TableView
+    CGPoint localOriginOfTable = CGPointMake(self.autoCompleteTextField.frame.origin.x, self.autoCompleteTextField.frame.origin.y + self.autoCompleteTextField.frame.size.height);
+    CGPoint presentationPoint = [self.presentingController.view convertPoint:localOriginOfTable fromView:self.autoCompleteTextField.superview];
     
-    calculatedHeight += self.presentingController.tabBarController.tabBar.frame.size.height;
+    // Window space origin of the Presenting View Controllers view
+    CGPoint globalOriginOfPVC = [self.superview convertPoint:self.superview.bounds.origin toView:rootView];
+    // Get the amount the keyboard overlaps the presenting view controller. This will affect the total remaining height for the tableview
+    int overlapOfKbOnPVC = (globalOriginOfPVC.y + pVCHeight) - (bottomOfScreen - kbHeight);
+
+    // The total remaining height
+    CGFloat remainingHeight = pVCHeight - presentationPoint.y - MAX(overlapOfKbOnPVC, 0);
+    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(heightForAutoCompleteTableView:)]) {
+        remainingHeight = [self.autoCompleteDelegate heightForAutoCompleteTableView:self.tableView];
+    }
     
-    CGPoint presentationPoint = [self.presentingController.view convertPoint:CGPointMake(self.autoCompleteTextField.frame.origin.x, calculatedY) fromView:self.autoCompleteTextField.superview];
     self.frame = CGRectMake(presentationPoint.x + self.contentInset.left,
                             presentationPoint.y + self.contentInset.top,
                             self.autoCompleteTextField.frame.size.width - self.contentInset.left - self.contentInset.right,
-                            MIN(calculatedHeight, self.tableView.contentSize.height) - self.contentInset.top - self.contentInset.bottom);
+                            MIN(remainingHeight, self.tableView.contentSize.height) - self.contentInset.top - self.contentInset.bottom);
     
     self.tableView.frame = CGRectMake(0, 0, self.frame.size.width, self.frame.size.height);
 }
