@@ -12,7 +12,7 @@
 
 @optional
 - (void)layoutAutoCompleteTableView;
-
+- (void)autoCompleteTableViewDidSelectValue:(NSString *)autoCompleteValue;
 - (CGFloat)heightForAutoCompleteTableView:(UITableView *)autoCompleteTableView;
 
 @end

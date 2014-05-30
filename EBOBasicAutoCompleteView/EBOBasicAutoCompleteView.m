@@ -238,6 +238,12 @@ presentingController:(UIViewController *)presentingController {
     NSObject *autoCompleteValue = self.autoCompleteList[indexPath.row];
     NSAssert([autoCompleteValue isKindOfClass:[NSString class]], @"autoCompleteValue must be an NSString");
     
+    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(autoCompleteTableViewDidSelectValue:)]) {
+        [self.autoCompleteDelegate autoCompleteTableViewDidSelectValue:(NSString *)autoCompleteValue];
+        [self.autoCompleteTextField resignFirstResponder];
+        return;
+    }
+    
     self.autoCompleteTextField.text = (NSString*)autoCompleteValue;
     [self.autoCompleteTextField resignFirstResponder];
 }
