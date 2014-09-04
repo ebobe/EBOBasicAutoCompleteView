@@ -40,7 +40,7 @@ presentingController:(UIViewController *)presentingController {
         self.presentingController = presentingController;
         
         self.tableView = [[UITableView alloc] initWithFrame:frame style:UITableViewStylePlain];
-        self.tableView.backgroundColor = [UIColor clearColor];
+        self.tableView.backgroundColor = [UIColor whiteColor];
         self.tableView.delegate = self;
         self.tableView.dataSource = self;
         
