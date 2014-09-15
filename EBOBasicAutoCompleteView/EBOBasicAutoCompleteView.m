@@ -8,6 +8,10 @@
 
 #import "EBOBasicAutoCompleteView.h"
 
+#ifndef kCFCoreFoundationVersionNumber_iOS_8_0
+#define kCFCoreFoundationVersionNumber_iOS_8_0 1140.1
+#endif
+
 @interface EBOBasicAutoCompleteView () <UITableViewDelegate, UITableViewDataSource>
 
 @property (nonatomic, weak) UITextField *autoCompleteTextField;
@@ -101,7 +105,12 @@ presentingController:(UIViewController *)presentingController {
     CGFloat pVCHeight = self.presentingController.view.frame.size.height;
     // Keyboard display height
     CGFloat kbHeight = 0;
-    if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation))
+    
+    // iOS 8 actually returns the correct keyboard size per orientation, so always use the height
+    if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iOS_8_0) {
+        kbHeight = self.keyboardSize.height;
+    }
+    else if (UIInterfaceOrientationIsPortrait([UIApplication sharedApplication].statusBarOrientation))
     {
         kbHeight = self.keyboardSize.height;
     }
