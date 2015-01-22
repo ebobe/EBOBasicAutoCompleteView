@@ -8,9 +8,11 @@
 
 #import <Foundation/Foundation.h>
 
+@class EBOBasicAutoCompleteView;
+
 @protocol EBOBasicAutoCompleteDataSource <NSObject>
 
 @required
-- (void)autoCompleteSuggestionsFor:(NSString *)query completeCallback:(void (^)(NSArray *))suggestionsCallback;
+- (void)autoCompleteView:(EBOBasicAutoCompleteView *)autoCompleteView suggestionsForQuery:(NSString *)query completeCallback:(void (^)(NSArray *))suggestionsCallback;
 
 @end

@@ -8,11 +8,16 @@
 
 #import <Foundation/Foundation.h>
 
+@class EBOBasicAutoCompleteView;
+
 @protocol EBOBasicAutoCompleteCell;
 
 @protocol EBOBasicAutoCompleteCellFactory <NSObject>
 
 @required
-- (UITableViewCell*)createReusableCellWithIdentifier:(NSString *)identifier;
+- (UITableViewCell *)autoCompleteView:(EBOBasicAutoCompleteView *)autoCompleteView createReusableCellWithIdentifier:(NSString *)identifier;
+
+@optional
+- (NSString *)identifierForAutoCompleteView:(EBOBasicAutoCompleteView *)autoCompleteView;
 
 @end

@@ -86,14 +86,22 @@ presentingController:(UIViewController *)presentingController {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
-- (void)close {
+#pragma mark - Public Methods
+
+- (void)dismiss {
     self.hidden = YES;
+}
+
+#pragma mark - Private Methods
+
+- (void)close {
+    [self dismiss];
 }
 
 - (void)layoutAutoCompleteTableView {
     // Allow the delegate to position the table view
-    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(layoutAutoCompleteTableView)]) {
-        [self.autoCompleteDelegate layoutAutoCompleteTableView];
+    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(layoutAutoCompleteView:)]) {
+        [self.autoCompleteDelegate layoutAutoCompleteView:self];
         return;
     }
     
@@ -174,7 +182,7 @@ presentingController:(UIViewController *)presentingController {
 }
 
 - (void)attemptAutoCompleteOfText:(NSString *)text {
-    [self.autoCompleteDataSource autoCompleteSuggestionsFor:text completeCallback:^(NSArray *suggestions) {
+    [self.autoCompleteDataSource autoCompleteView:self suggestionsForQuery:text completeCallback:^(NSArray *suggestions) {
         [self passInSearchResults:suggestions];
     }];
 }
@@ -212,28 +220,39 @@ presentingController:(UIViewController *)presentingController {
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    static NSString *identifier = @"EBOBasicAutoCompleteCell";
+    static NSString *eboCellIdentifier = @"EBOBasicAutoCompleteCell";
+    
+    // Try and get an identifier from the Cell Factory
+    NSString *identifier = nil;
+    if (self.autoCompleteCellFactory && [self.autoCompleteCellFactory respondsToSelector:@selector(identifierForAutoCompleteView:)]) {
+        identifier = [self.autoCompleteCellFactory identifierForAutoCompleteView:self];
+    }
+    
+    // If it's still nil, then just set to our default identifier
+    if (!identifier) {
+        identifier = eboCellIdentifier;
+    }
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:identifier];
     if (cell == nil) {
         if (self.autoCompleteCellFactory)
-            cell = [self.autoCompleteCellFactory createReusableCellWithIdentifier:identifier];
+            cell = [self.autoCompleteCellFactory autoCompleteView:self createReusableCellWithIdentifier:identifier];
         else
             cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:identifier];
     }
 
     NSObject *autoCompleteValue = self.autoCompleteList[indexPath.row];
-    NSAssert([autoCompleteValue isKindOfClass:[NSString class]], @"autoCompleteValue must be an NSString");
+    NSAssert([autoCompleteValue isKindOfClass:[NSObject class]], @"autoCompleteValue must be an NSObject");
     
     // EBOBasicAutoCompleteCell
     if ([cell conformsToProtocol:@protocol(EBOBasicAutoCompleteCell)]) {
-        UITableViewCell <EBOBasicAutoCompleteCell> *completionCell = (UITableViewCell <EBOBasicAutoCompleteCell> *) cell;
+        UITableViewCell <EBOBasicAutoCompleteCell> *completionCell = (UITableViewCell <EBOBasicAutoCompleteCell> *)cell;
         
-        if ([completionCell respondsToSelector:@selector(updateText:)])
-            [completionCell updateText:(NSString*)autoCompleteValue];
+        if ([completionCell respondsToSelector:@selector(updateWithAutoCompleteObject:)])
+            [completionCell updateWithAutoCompleteObject:autoCompleteValue];
     }
     // By default, update the text on a UITableViewCell
-    else {
+    else if ([autoCompleteValue isKindOfClass:[NSString class]]) {
         ((UITableViewCell *)cell).textLabel.text = (NSString*)autoCompleteValue;
     }
     
@@ -245,15 +264,15 @@ presentingController:(UIViewController *)presentingController {
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     NSObject *autoCompleteValue = self.autoCompleteList[indexPath.row];
-    NSAssert([autoCompleteValue isKindOfClass:[NSString class]], @"autoCompleteValue must be an NSString");
+    NSAssert([autoCompleteValue isKindOfClass:[NSObject class]], @"autoCompleteValue must be an NSObject");
     
-    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(autoCompleteTableViewDidSelectValue:)]) {
-        [self.autoCompleteDelegate autoCompleteTableViewDidSelectValue:(NSString *)autoCompleteValue];
-        [self.autoCompleteTextField resignFirstResponder];
-        return;
+    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(autoCompleteView:didSelectValue:)]) {
+        [self.autoCompleteDelegate autoCompleteView:self didSelectValue:autoCompleteValue];
+    }
+    else if ([autoCompleteValue isKindOfClass:[NSString class]]) {
+        self.autoCompleteTextField.text = (NSString*)autoCompleteValue;
     }
     
-    self.autoCompleteTextField.text = (NSString*)autoCompleteValue;
     [self.autoCompleteTextField resignFirstResponder];
 }
 

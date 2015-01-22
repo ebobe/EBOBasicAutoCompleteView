@@ -30,4 +30,6 @@
         cellFactory:(id <EBOBasicAutoCompleteCellFactory>)cellFactory
 presentingController:(UIViewController *)presentingController;
 
+- (void)dismiss;
+
 @end

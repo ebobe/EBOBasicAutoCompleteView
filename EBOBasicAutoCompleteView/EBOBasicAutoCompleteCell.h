@@ -10,7 +10,7 @@
 
 @protocol EBOBasicAutoCompleteCell <NSObject>
 
-@optional
-- (void)updateText:(NSString *)text;
+@required
+- (void)updateWithAutoCompleteObject:(NSObject *)updateObject;
 
 @end

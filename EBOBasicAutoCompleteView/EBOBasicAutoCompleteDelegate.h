@@ -8,11 +8,13 @@
 
 #import <Foundation/Foundation.h>
 
+@class EBOBasicAutoCompleteView;
+
 @protocol EBOBasicAutoCompleteDelegate <NSObject>
 
 @optional
-- (void)layoutAutoCompleteTableView;
-- (void)autoCompleteTableViewDidSelectValue:(NSString *)autoCompleteValue;
+- (void)layoutAutoCompleteView:(EBOBasicAutoCompleteView *)autoCompleteView;
+- (void)autoCompleteView:(EBOBasicAutoCompleteView *)autoCompleteView didSelectValue:(NSObject *)autoCompleteValue;
 - (CGFloat)heightForAutoCompleteTableView:(UITableView *)autoCompleteTableView;
 
 @end
