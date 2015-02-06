@@ -90,6 +90,7 @@ presentingController:(UIViewController *)presentingController {
 
 - (void)dismiss {
     self.hidden = YES;
+    self.autoCompleteList = nil;
 }
 
 #pragma mark - Private Methods
@@ -99,18 +100,21 @@ presentingController:(UIViewController *)presentingController {
 }
 
 - (void)layoutAutoCompleteTableView {
-    // Allow the delegate to position the table view
-    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(layoutAutoCompleteView:)]) {
-        [self.autoCompleteDelegate layoutAutoCompleteView:self];
-        return;
+    CGRect layoutFrame = [self frameForLayoutBelow];
+    // If we cannot fit the table below the text field (between textfield and keyboard)
+    if (layoutFrame.size.height < self.tableView.rowHeight) {
+        // Attempt a layout above
+        layoutFrame = [self frameForLayoutAbove];
     }
-    
+    self.frame = layoutFrame;
+    self.tableView.frame = CGRectMake(0, 0, self.frame.size.width, self.frame.size.height);
+}
+
+- (CGRect)frameForLayoutBelow {
     UIView *rootView = [UIApplication sharedApplication].keyWindow.rootViewController.view;
-    CGRect mainFrame = [UIScreen mainScreen].bounds;
+    CGRect mainFrame = rootView.bounds;
     // The bottom of the screen
     CGFloat bottomOfScreen = CGRectGetMaxY(mainFrame);
-    // Presenting View Controller's view height
-    CGFloat pVCHeight = self.presentingController.view.frame.size.height;
     // Keyboard display height
     CGFloat kbHeight = 0;
     
@@ -124,31 +128,82 @@ presentingController:(UIViewController *)presentingController {
     }
     else if (UIInterfaceOrientationIsLandscape([UIApplication sharedApplication].statusBarOrientation))
     {
-        bottomOfScreen = CGRectGetMaxX(mainFrame);
         kbHeight = self.keyboardSize.width;
     }
     
-    // Find the point at which to display our AutoComplete TableView
-    CGPoint localOriginOfTable = CGPointMake(self.autoCompleteTextField.frame.origin.x, self.autoCompleteTextField.frame.origin.y + self.autoCompleteTextField.frame.size.height);
-    CGPoint presentationPoint = [self.presentingController.view convertPoint:localOriginOfTable fromView:self.autoCompleteTextField.superview];
-    
-    // Window space origin of the Presenting View Controllers view
-    CGPoint globalOriginOfPVC = [self.superview convertPoint:self.superview.bounds.origin toView:rootView];
-    // Get the amount the keyboard overlaps the presenting view controller. This will affect the total remaining height for the tableview
-    int overlapOfKbOnPVC = (globalOriginOfPVC.y + pVCHeight) - (bottomOfScreen - kbHeight);
-
-    // The total remaining height
-    CGFloat remainingHeight = pVCHeight - presentationPoint.y - MAX(overlapOfKbOnPVC, 0);
-    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(heightForAutoCompleteTableView:)]) {
-        remainingHeight = [self.autoCompleteDelegate heightForAutoCompleteTableView:self.tableView];
+    // Get the view from which we will display our AutoComplete TableView
+    UIView *viewToDisplayFrom = nil;
+    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(substitueViewToDisplayAutoCompleteView:)]) {
+        viewToDisplayFrom = [self.autoCompleteDelegate substitueViewToDisplayAutoCompleteView:self];
+    }
+    if (!viewToDisplayFrom) {
+        viewToDisplayFrom = self.autoCompleteTextField;
     }
     
-    self.frame = CGRectMake(presentationPoint.x + self.contentInset.left,
-                            presentationPoint.y + self.contentInset.top,
-                            self.autoCompleteTextField.frame.size.width - self.contentInset.left - self.contentInset.right,
-                            MIN(remainingHeight, self.tableView.contentSize.height) - self.contentInset.top - self.contentInset.bottom);
+    // Find the point at which to display our AutoComplete TableView
+    CGPoint localOriginOfTable = CGPointMake(viewToDisplayFrom.frame.origin.x, viewToDisplayFrom.frame.origin.y + viewToDisplayFrom.frame.size.height);
+    CGPoint presentationPoint = [self.presentingController.view convertPoint:localOriginOfTable fromView:viewToDisplayFrom.superview];
     
-    self.tableView.frame = CGRectMake(0, 0, self.frame.size.width, self.frame.size.height);
+    // Window space origin of the Presenting Point
+    CGPoint globalOriginOfPP = [self.presentingController.view convertPoint:presentationPoint toView:nil];
+    
+    // Correct for iOS 6, landscape mode
+    if (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_7_0) {
+        if (UIInterfaceOrientationLandscapeLeft == [UIApplication sharedApplication].statusBarOrientation) {
+            globalOriginOfPP.y = globalOriginOfPP.x - rootView.frame.origin.x;
+        }
+        else if (UIInterfaceOrientationLandscapeRight == [UIApplication sharedApplication].statusBarOrientation) {
+            globalOriginOfPP.y = rootView.frame.size.width - globalOriginOfPP.x;
+        }
+    }
+    
+    // The total remaining height
+    CGFloat remainingHeight = (bottomOfScreen - kbHeight) - (globalOriginOfPP.y + rootView.bounds.origin.y);
+    
+    return CGRectMake(presentationPoint.x + self.contentInset.left,
+                            presentationPoint.y + self.contentInset.top,
+                            viewToDisplayFrom.frame.size.width - self.contentInset.left - self.contentInset.right,
+                            MIN(remainingHeight, self.tableView.contentSize.height) - self.contentInset.top - self.contentInset.bottom);
+}
+
+- (CGRect)frameForLayoutAbove {
+    UIView *rootView = [UIApplication sharedApplication].keyWindow.rootViewController.view;
+    // Get the view from which we will display our AutoComplete TableView
+    UIView *viewToDisplayFrom = nil;
+    if (self.autoCompleteDelegate && [self.autoCompleteDelegate respondsToSelector:@selector(substitueViewToDisplayAutoCompleteView:)]) {
+        viewToDisplayFrom = [self.autoCompleteDelegate substitueViewToDisplayAutoCompleteView:self];
+    }
+    if (!viewToDisplayFrom) {
+        viewToDisplayFrom = self.autoCompleteTextField;
+    }
+    
+    // Find the point at which to display our AutoComplete TableView
+    CGPoint localOriginOfTable = CGPointMake(viewToDisplayFrom.frame.origin.x, viewToDisplayFrom.frame.origin.y);
+    CGPoint presentationPoint = [self.presentingController.view convertPoint:localOriginOfTable fromView:viewToDisplayFrom.superview];
+    
+    // Window space origin of the Presenting View Controllers view
+    CGPoint globalOriginOfPVC = [self.presentingController.view convertPoint:self.presentingController.view.bounds.origin toView:nil];
+
+    // Window space origin of the Presenting Point
+    CGPoint globalOriginOfPP = [self.presentingController.view convertPoint:presentationPoint toView:nil];
+    
+    // Correct for iOS 6, landscape mode
+    if (kCFCoreFoundationVersionNumber < kCFCoreFoundationVersionNumber_iOS_7_0) {
+        if (UIInterfaceOrientationLandscapeLeft == [UIApplication sharedApplication].statusBarOrientation) {
+            globalOriginOfPP.y = globalOriginOfPP.x - rootView.frame.origin.x;
+        }
+        else if (UIInterfaceOrientationLandscapeRight == [UIApplication sharedApplication].statusBarOrientation) {
+            globalOriginOfPP.y = rootView.frame.size.width - globalOriginOfPP.x;
+        }
+    }
+    
+    // The total remaining height
+    CGFloat remainingHeight = globalOriginOfPVC.y - globalOriginOfPP.y;
+    
+    return CGRectMake(presentationPoint.x + self.contentInset.left,
+                      presentationPoint.y + self.contentInset.top,
+                      viewToDisplayFrom.frame.size.width - self.contentInset.left - self.contentInset.right,
+                      MAX(remainingHeight, -self.tableView.contentSize.height) - self.contentInset.top - self.contentInset.bottom);
 }
 
 #pragma mark - UIKeyboard Notification methods
@@ -241,6 +296,10 @@ presentingController:(UIViewController *)presentingController {
             cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:identifier];
     }
 
+    if (!self.autoCompleteList || indexPath.row >= self.autoCompleteList.count) {
+        return cell;
+    }
+    
     NSObject *autoCompleteValue = self.autoCompleteList[indexPath.row];
     NSAssert([autoCompleteValue isKindOfClass:[NSObject class]], @"autoCompleteValue must be an NSObject");
     

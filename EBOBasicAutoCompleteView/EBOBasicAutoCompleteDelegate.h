@@ -13,8 +13,7 @@
 @protocol EBOBasicAutoCompleteDelegate <NSObject>
 
 @optional
-- (void)layoutAutoCompleteView:(EBOBasicAutoCompleteView *)autoCompleteView;
+- (UIView *)substitueViewToDisplayAutoCompleteView:(EBOBasicAutoCompleteView *)autoCompleteView;
 - (void)autoCompleteView:(EBOBasicAutoCompleteView *)autoCompleteView didSelectValue:(NSObject *)autoCompleteValue;
-- (CGFloat)heightForAutoCompleteTableView:(UITableView *)autoCompleteTableView;
 
 @end
